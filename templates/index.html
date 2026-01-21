@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tách File PDF Với AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #7c3aed 100%);
+            border-radius: 20px 20px 0 0 !important;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .card-header h1 {
+            color: white;
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        .card-header p {
+            color: rgba(255,255,255,0.8);
+            margin: 0.5rem 0 0 0;
+        }
+        
+        .card-body {
+            padding: 2rem;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #cbd5e1;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background: #eef2ff;
+        }
+        
+        .upload-zone i {
+            font-size: 4rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+        
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: #f1f5f9;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-item i {
+            color: #ef4444;
+            margin-right: 0.75rem;
+            font-size: 1.5rem;
+        }
+        
+        .file-item .file-name {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+        
+        .file-item .file-size {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+        
+        .file-item .remove-btn {
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-left: 0.5rem;
+        }
+        
+        .file-item .remove-btn:hover {
+            color: #ef4444;
+        }
+        
+        .btn-process {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #7c3aed 100%);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            width: 100%;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-process:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-process:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 1.5rem;
+        }
+        
+        .progress {
+            height: 12px;
+            border-radius: 10px;
+            background: #e2e8f0;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-color) 0%, #7c3aed 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .status-text {
+            text-align: center;
+            margin-top: 1rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .result-stats {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .analysis-result {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .split-results {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .split-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+        }
+        
+        .split-item.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .split-item.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .error-alert {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .api-key-input {
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        
+        .api-key-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .api-help {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        
+        .api-help a {
+            color: var(--primary-color);
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <h1><i class="bi bi-file-earmark-pdf"></i> Tách File PDF Với AI</h1>
+                <p>Tự động phân tích và tách văn bản tố tụng hình sự</p>
+            </div>
+            <div class="card-body">
+                <!-- AI Provider Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-robot"></i> Chọn AI Provider
+                    </label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="aiProvider" id="providerGoogle" value="google" checked>
+                        <label class="btn btn-outline-primary" for="providerGoogle">
+                            <i class="bi bi-google"></i> Google Gemini
+                        </label>
+                        <input type="radio" class="btn-check" name="aiProvider" id="providerDeepseek" value="deepseek">
+                        <label class="btn btn-outline-primary" for="providerDeepseek">
+                            <i class="bi bi-cpu"></i> DeepSeek
+                        </label>
+                    </div>
+                </div>
+
+                <!-- API Key -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-key"></i> API Key
+                    </label>
+                    <input type="password" class="form-control api-key-input" id="apiKey" 
+                           placeholder="Nhập API Key của bạn...">
+                    <div class="api-help" id="apiHelp">
+                        Lấy API Key tại <a href="https://aistudio.google.com/app/apikey" target="_blank" id="apiLink">Google AI Studio</a>
+                    </div>
+                </div>
+                
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <h4>Kéo thả file PDF vào đây</h4>
+                    <p class="text-muted">hoặc click để chọn file</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                </div>
+                
+                <!-- File List -->
+                <div class="file-list" id="fileList"></div>
+                
+                <!-- Error Alert -->
+                <div class="error-alert" id="errorAlert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span id="errorMessage"></span>
+                </div>
+                
+                <!-- Process Button -->
+                <button class="btn btn-primary btn-process" id="processBtn" disabled>
+                    <i class="bi bi-magic"></i> Bắt Đầu Phân Tích & Tách
+                </button>
+                
+                <!-- Progress -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress">
+                        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="status-text" id="statusText">Đang xử lý...</div>
+                </div>
+                
+                <!-- Results -->
+                <div class="result-container" id="resultContainer">
+                    <hr>
+                    <div class="result-header">
+                        <div class="result-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="statFiles">0</div>
+                                <div class="stat-label">File gốc</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="statSplit">0</div>
+                                <div class="stat-label">Văn bản tách</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-success btn-download" id="downloadBtn">
+                            <i class="bi bi-download"></i> Tải Kết Quả
+                        </button>
+                    </div>
+                    
+                    <!-- Analysis Data -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-code-slash"></i> Kết Quả Phân Tích (JSON)
+                        </label>
+                        <pre class="analysis-result" id="analysisResult"></pre>
+                    </div>
+                    
+                    <!-- Split Results -->
+                    <div>
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-list-check"></i> Chi Tiết Tách File
+                        </label>
+                        <div class="split-results" id="splitResults"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <small class="text-white-50">© 2024 - Powered by Google Gemini AI</small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const processBtn = document.getElementById('processBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+        const resultContainer = document.getElementById('resultContainer');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const apiKeyInput = document.getElementById('apiKey');
+        
+        let selectedFiles = [];
+        let downloadId = null;
+        
+        // Load saved API key
+        const savedGoogleKey = localStorage.getItem('google_api_key');
+        const savedDeepseekKey = localStorage.getItem('deepseek_api_key');
+        const savedProvider = localStorage.getItem('ai_provider') || 'google';
+        
+        // Set saved provider
+        if (savedProvider === 'deepseek') {
+            document.getElementById('providerDeepseek').checked = true;
+            apiKeyInput.value = savedDeepseekKey || '';
+            updateApiHelp('deepseek');
+        } else {
+            document.getElementById('providerGoogle').checked = true;
+            apiKeyInput.value = savedGoogleKey || '';
+            updateApiHelp('google');
+        }
+        
+        // Update API help text based on provider
+        function updateApiHelp(provider) {
+            const apiLink = document.getElementById('apiLink');
+            if (provider === 'deepseek') {
+                apiLink.href = 'https://platform.deepseek.com/api_keys';
+                apiLink.textContent = 'DeepSeek Platform';
+            } else {
+                apiLink.href = 'https://aistudio.google.com/app/apikey';
+                apiLink.textContent = 'Google AI Studio';
+            }
+        }
+        
+        // Provider change handler
+        document.querySelectorAll('input[name="aiProvider"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const provider = e.target.value;
+                localStorage.setItem('ai_provider', provider);
+                updateApiHelp(provider);
+                
+                // Load corresponding API key
+                if (provider === 'deepseek') {
+                    apiKeyInput.value = localStorage.getItem('deepseek_api_key') || '';
+                } else {
+                    apiKeyInput.value = localStorage.getItem('google_api_key') || '';
+                }
+                updateProcessButton();
+            });
+        });
+        
+        // Save API key on change
+        apiKeyInput.addEventListener('change', () => {
+            const provider = document.querySelector('input[name="aiProvider"]:checked').value;
+            if (provider === 'deepseek') {
+                localStorage.setItem('deepseek_api_key', apiKeyInput.value);
+            } else {
+                localStorage.setItem('google_api_key', apiKeyInput.value);
+            }
+        });
+        
+        // Upload zone events
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.type === 'application/pdf' && !selectedFiles.find(f => f.name === file.name)) {
+                    selectedFiles.push(file);
+                }
+            }
+            updateFileList();
+            updateProcessButton();
+        }
+        
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                    <span class="remove-btn" onclick="removeFile(${index})">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
+                `;
+                fileList.appendChild(div);
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            updateProcessButton();
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        function updateProcessButton() {
+            processBtn.disabled = selectedFiles.length === 0 || !apiKeyInput.value.trim();
+        }
+        
+        apiKeyInput.addEventListener('input', updateProcessButton);
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.style.display = 'block';
+        }
+        
+        function hideError() {
+            errorAlert.style.display = 'none';
+        }
+        
+        processBtn.addEventListener('click', async () => {
+            hideError();
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                showError('Vui lòng nhập API Key');
+                return;
+            }
+            
+            if (selectedFiles.length === 0) {
+                showError('Vui lòng chọn ít nhất một file PDF');
+                return;
+            }
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('api_key', apiKey);
+            formData.append('ai_provider', document.querySelector('input[name="aiProvider"]:checked').value);
+            selectedFiles.forEach(file => {
+                formData.append('files[]', file);
+            });
+            
+            // Show progress
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="bi bi-hourglass-split spinner"></i> Đang xử lý...';
+            progressContainer.style.display = 'block';
+            resultContainer.style.display = 'none';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 10;
+                    progressBar.style.width = Math.min(progress, 90) + '%';
+                    
+                    if (progress < 30) {
+                        statusText.textContent = 'Đang tải file lên...';
+                    } else if (progress < 60) {
+                        statusText.textContent = 'Đang phân tích với AI...';
+                    } else {
+                        statusText.textContent = 'Đang tách file PDF...';
+                    }
+                }
+            }, 500);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    resetUI();
+                    return;
+                }
+                
+                // Show results
+                downloadId = data.download_id;
+                document.getElementById('statFiles').textContent = data.total_files;
+                document.getElementById('statSplit').textContent = data.total_split;
+                document.getElementById('analysisResult').textContent = JSON.stringify(data.analysis, null, 2);
+                
+                // Show split results
+                const splitResultsDiv = document.getElementById('splitResults');
+                splitResultsDiv.innerHTML = '';
+                data.results.forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = 'split-item ' + result.status;
+                    if (result.status === 'success') {
+                        div.innerHTML = `<i class="bi bi-check-circle me-2"></i> ${result.file} (Trang ${result.pages})`;
+                    } else {
+                        div.innerHTML = `<i class="bi bi-x-circle me-2"></i> ${result.file}: ${result.message}`;
+                    }
+                    splitResultsDiv.appendChild(div);
+                });
+                
+                statusText.textContent = 'Hoàn tất!';
+                resultContainer.style.display = 'block';
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError('Lỗi kết nối: ' + error.message);
+            }
+            
+            resetUI();
+        });
+        
+        function resetUI() {
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="bi bi-magic"></i> Bắt Đầu Phân Tích & Tách';
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+            }, 1000);
+        }
+        
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (downloadId) {
+                window.location.href = '/download/' + downloadId;
+            }
+        });
+    </script>
+</body>
+</html>
