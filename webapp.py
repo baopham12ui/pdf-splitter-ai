@@ -1,6 +1,6 @@
 """
 Web App Tách File PDF Với AI
-Flask + Google Generative AI + DeepSeek
+Flask + Google Generative AI
 """
 
 import os
@@ -21,16 +21,15 @@ try:
     import fitz
 except ImportError:
     print("❌ Cần cài PyMuPDF: pip install PyMuPDF")
-    sys.exit(1)
+    fitz = None
 
 # OCR support
 try:
     import pytesseract
     from PIL import Image
-    import io
+    import io as io_module
     OCR_AVAILABLE = True
 except ImportError:
-    print("⚠️ OCR không khả dụng. Cài: pip install pytesseract pillow")
     OCR_AVAILABLE = False
 
 # Google GenAI (new API)
@@ -45,8 +44,8 @@ except ImportError:
 #  CẤU HÌNH
 # ===============================
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max
+app.secret_key = os.environ.get('SECRET_KEY', 'pdf-splitter-secret-key-2024')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 UPLOAD_FOLDER = tempfile.mkdtemp()
 OUTPUT_FOLDER = tempfile.mkdtemp()
@@ -410,14 +409,20 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'google_ai': GOOGLE_AI_AVAILABLE})
+
+
 @app.route('/upload', methods=['POST'])
 def upload_files():
-    if 'files[]' not in request.files:
-        return jsonify({'error': 'Không có file nào được chọn'}), 400
+    try:
+        if 'files[]' not in request.files:
+            return jsonify({'error': 'Không có file nào được chọn'}), 400
 
-    api_key = request.form.get('api_key', '').strip()
-    if not api_key:
-        return jsonify({'error': 'Vui lòng nhập API Key'}), 400
+        api_key = request.form.get('api_key', '').strip()
+        if not api_key:
+            return jsonify({'error': 'Vui lòng nhập API Key'}), 400
 
     ai_provider = request.form.get('ai_provider', 'google').strip()
 
@@ -479,6 +484,9 @@ def upload_files():
         'results': split_results,
         'download_id': session_id
     })
+    
+    except Exception as e:
+        return jsonify({'error': f'Lỗi server: {str(e)}'}), 500
 
 
 @app.route('/download/<session_id>')
@@ -496,13 +504,10 @@ def download_result(session_id):
 #  MAIN
 # ===============================
 if __name__ == '__main__':
-    if not GOOGLE_AI_AVAILABLE:
-        print("❌ Cần cài google-generativeai: pip install google-generativeai")
-        sys.exit(1)
-
     # Tạo thư mục templates nếu chưa có
     templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
     os.makedirs(templates_dir, exist_ok=True)
 
-    print("🚀 Server đang chạy tại http://127.0.0.1:8080")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    port = int(os.environ.get('PORT', 8080))
+    print(f"🚀 Server đang chạy tại http://127.0.0.1:{port}")
+    app.run(debug=False, host='0.0.0.0', port=port)
