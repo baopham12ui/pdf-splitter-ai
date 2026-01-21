@@ -1,20 +1,27 @@
 # 📄 PDF Splitter với AI
 
-Ứng dụng web tự động phân tích và tách file PDF chứa nhiều văn bản tố tụng hình sự sử dụng AI (Google Gemini / DeepSeek).
+Ứng dụng web tự động phân tích và tách file PDF chứa nhiều văn bản tố tụng hình sự sử dụng Google Gemini AI.
 
-![Demo](https://img.shields.io/badge/Demo-Live-green)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/pdf-splitter?referralCode=baopham12ui)
+
 ![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## ✨ Tính năng
 
-- 🤖 Hỗ trợ 2 AI: **Google Gemini** và **DeepSeek**
+- 🤖 Sử dụng **Google Gemini 2.5 Flash** AI
 - 📑 Tự động nhận diện các loại văn bản: Quyết định, Lệnh, Cáo trạng, Bản án...
-- 📄 Hỗ trợ PDF scan (với OCR)
+- 📄 Hỗ trợ PDF scan (có hình ảnh)
 - 📦 Tải về kết quả dạng ZIP
 - 🎨 Giao diện web đẹp, dễ sử dụng
 
-## 🚀 Cài đặt
+## 🚀 Deploy Online (1-Click)
+
+### Railway (Khuyến nghị)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/baopham12ui/pdf-splitter-ai)
+
+### Render
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/baopham12ui/pdf-splitter-ai)
 
 ### 1. Clone repository
 
