@@ -80,7 +80,7 @@
                 <div class="upload-zone" id="uploadZone">
                     <i class="bi bi-cloud-arrow-up"></i>
                     <h4>Kéo thả file PDF vào đây</h4>
-                    <p class="text-muted">hoặc click để chọn file (tối đa 20MB)</p>
+                    <p class="text-muted">hoặc click để chọn file (tối đa 5MB)</p>
                     <input type="file" id="fileInput" accept=".pdf" style="display: none;">
                 </div>
                 
@@ -170,8 +170,8 @@
         });
         
         function handleFile(file) {
-            if (file.size > 20 * 1024 * 1024) {
-                showError('File quá lớn! Tối đa 20MB.');
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File quá lớn! Tối đa 5MB cho bản online. Dùng bản desktop cho file lớn hơn.');
                 return;
             }
             selectedFile = file;

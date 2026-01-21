@@ -36,7 +36,7 @@ except ImportError:
 # ===============================
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pdf-splitter-2024')
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max for free tier
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max for free tier
 
 UPLOAD_FOLDER = tempfile.gettempdir()
 ALLOWED_EXTENSIONS = {'pdf'}
