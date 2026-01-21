@@ -424,66 +424,61 @@ def upload_files():
         if not api_key:
             return jsonify({'error': 'Vui lòng nhập API Key'}), 400
 
-    ai_provider = request.form.get('ai_provider', 'google').strip()
+        files = request.files.getlist('files[]')
+        if not files or all(f.filename == '' for f in files):
+            return jsonify({'error': 'Không có file nào được chọn'}), 400
 
-    files = request.files.getlist('files[]')
-    if not files or all(f.filename == '' for f in files):
-        return jsonify({'error': 'Không có file nào được chọn'}), 400
+        # Tạo session folder
+        session_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_upload = os.path.join(UPLOAD_FOLDER, session_id)
+        session_output = os.path.join(OUTPUT_FOLDER, session_id)
+        os.makedirs(session_upload, exist_ok=True)
+        os.makedirs(session_output, exist_ok=True)
 
-    # Tạo session folder
-    session_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    session_upload = os.path.join(UPLOAD_FOLDER, session_id)
-    session_output = os.path.join(OUTPUT_FOLDER, session_id)
-    os.makedirs(session_upload, exist_ok=True)
-    os.makedirs(session_output, exist_ok=True)
+        pdf_file_paths = {}
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(session_upload, filename)
+                file.save(file_path)
+                pdf_file_paths[filename] = file_path
 
-    pdf_file_paths = {}
-    for file in files:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(session_upload, filename)
-            file.save(file_path)
-            pdf_file_paths[filename] = file_path
+        if not pdf_file_paths:
+            return jsonify({'error': 'Không có file PDF hợp lệ'}), 400
 
-    if not pdf_file_paths:
-        return jsonify({'error': 'Không có file PDF hợp lệ'}), 400
-
-    # Phân tích với AI theo provider
-    if ai_provider == 'deepseek':
-        error, analysis_data = analyze_pdfs_with_deepseek(api_key, pdf_file_paths)
-    else:
+        # Phân tích với Google AI
         if not GOOGLE_AI_AVAILABLE:
-            return jsonify({'error': 'Google AI không khả dụng. Vui lòng cài: pip install google-generativeai'}), 400
+            return jsonify({'error': 'Google AI không khả dụng'}), 400
         error, analysis_data = analyze_pdfs_with_google(api_key, pdf_file_paths)
-    
-    if error:
+        
+        if error:
+            shutil.rmtree(session_upload, ignore_errors=True)
+            return jsonify({'error': error}), 400
+
+        # Tách file
+        total_success, split_results = split_pdfs(pdf_file_paths, analysis_data, session_output)
+
+        # Lưu analysis data
+        analysis_file = os.path.join(session_output, "analysis_data.json")
+        with open(analysis_file, "w", encoding="utf-8") as f:
+            json.dump(analysis_data, f, ensure_ascii=False, indent=4)
+
+        # Tạo ZIP
+        zip_filename = f"ket_qua_{session_id}.zip"
+        zip_path = os.path.join(OUTPUT_FOLDER, zip_filename)
+        create_zip(session_output, zip_path)
+
+        # Cleanup upload folder
         shutil.rmtree(session_upload, ignore_errors=True)
-        return jsonify({'error': error}), 400
 
-    # Tách file
-    total_success, split_results = split_pdfs(pdf_file_paths, analysis_data, session_output)
-
-    # Lưu analysis data
-    analysis_file = os.path.join(session_output, "analysis_data.json")
-    with open(analysis_file, "w", encoding="utf-8") as f:
-        json.dump(analysis_data, f, ensure_ascii=False, indent=4)
-
-    # Tạo ZIP
-    zip_filename = f"ket_qua_{session_id}.zip"
-    zip_path = os.path.join(OUTPUT_FOLDER, zip_filename)
-    create_zip(session_output, zip_path)
-
-    # Cleanup upload folder
-    shutil.rmtree(session_upload, ignore_errors=True)
-
-    return jsonify({
-        'success': True,
-        'total_files': len(pdf_file_paths),
-        'total_split': total_success,
-        'analysis': analysis_data,
-        'results': split_results,
-        'download_id': session_id
-    })
+        return jsonify({
+            'success': True,
+            'total_files': len(pdf_file_paths),
+            'total_split': total_success,
+            'analysis': analysis_data,
+            'results': split_results,
+            'download_id': session_id
+        })
     
     except Exception as e:
         return jsonify({'error': f'Lỗi server: {str(e)}'}), 500
